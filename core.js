@@ -20,11 +20,13 @@
     fresh.pet.name=typeof value.pet?.name==='string'?value.pet.name.slice(0,30):fresh.pet.name;
     fresh.pet.breed=typeof value.pet?.breed==='string'?value.pet.breed.slice(0,40):fresh.pet.breed;
     fresh.pet.age=Number.isFinite(+value.pet?.age)&&+value.pet.age>=0?Math.min(40,+value.pet.age):fresh.pet.age;
-    fresh.weights=Array.isArray(value.weights)?value.weights.filter(v=>Number.isFinite(v.kg)&&v.kg>0&&v.kg<=150&&Number.isFinite(v.at)).slice(0,1000):[];
+    const validTime=at=>Number.isFinite(at)&&Number.isFinite(new Date(at).getTime());
+    fresh.weights=Array.isArray(value.weights)?value.weights.filter(v=>Number.isFinite(v.kg)&&v.kg>0&&v.kg<=150&&validTime(v.at)).slice(0,1000):[];
     fresh.goal=Number.isFinite(+value.goal)&&+value.goal>0?Math.min(10000,+value.goal):101;
     for(const kind of ['food','water']){const old=value.scales?.[kind];if(old){try{fresh.scales[kind].weight=readGrams(old.weight);}catch{}fresh.scales[kind].url=typeof old.url==='string'?old.url:'';fresh.scales[kind].last=Number.isFinite(old.last)?old.last:null;}}
-    for(const key of ['activities','dailyTargets'])if(value[key]&&typeof value[key]==='object'&&!Array.isArray(value[key]))fresh[key]=value[key];
-    fresh.logs=Array.isArray(value.logs)?value.logs.filter(l=>['food','water'].includes(l.type)&&Number.isFinite(l.at)&&Number.isFinite(l.weight)&&Number.isFinite(l.delta)&&Number.isFinite(l.consumed)&&l.consumed>=0&&['device','demo'].includes(l.source)).slice(0,5000):[];
+    for(const [date,a] of Object.entries(value.activities||{}))if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&a&&Number.isFinite(a.steps)&&a.steps>=0&&a.steps<=200000&&Number.isFinite(a.minutes)&&a.minutes>=0&&a.minutes<=1440)fresh.activities[date]={steps:Math.round(a.steps),minutes:Math.round(a.minutes)};
+    for(const [date,n] of Object.entries(value.dailyTargets||{}))if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(n)&&n>0&&n<=10000)fresh.dailyTargets[date]=n;
+    fresh.logs=Array.isArray(value.logs)?value.logs.filter(l=>['food','water'].includes(l.type)&&validTime(l.at)&&Number.isFinite(l.weight)&&l.weight>=0&&Number.isFinite(l.delta)&&Number.isFinite(l.consumed)&&l.consumed>=0&&['device','demo'].includes(l.source)).slice(0,5000):[];
     return fresh;
   }
   const api={dayKey,initial,readGrams,record,total,merge};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.FeederCore=api;
